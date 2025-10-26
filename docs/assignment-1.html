@@ -352,12 +352,13 @@ div.tocify {
 <p>This is a short analysis demonstrating basic skills: plotting and
 linear regression.</p>
 </div>
-<div id="data-methods" class="section level1">
-<h1>Data &amp; methods</h1>
-<p>We use the built-in <code>txhousing</code> dataset from
+<div id="data" class="section level1">
+<h1>Data</h1>
+<p>Using the built-in <code>txhousing</code> dataset from
 <strong>ggplot2</strong>.</p>
 <pre class="r"><code>library(ggplot2)
 library(dplyr)
+library(maps)
 
 summary(txhousing)</code></pre>
 <pre><code>##      city                year          month            sales       
@@ -391,8 +392,8 @@ plot_data &lt;- txhousing %&gt;%
   group_by(city, year) %&gt;%
   summarize(median_sale_price = median(median, na.rm = TRUE), .groups = &quot;drop&quot;)</code></pre>
 </div>
-<div id="visualization" class="section level1">
-<h1>Visualization</h1>
+<div id="plot" class="section level1">
+<h1>Plot</h1>
 <pre class="r"><code>ggplot(plot_data, aes(x = year, y = median_sale_price, color = city)) +
   geom_line(linewidth = 1.2) +
   labs(title = &quot;Housing Prices in Major Texas Cities&quot;,
@@ -402,8 +403,8 @@ plot_data &lt;- txhousing %&gt;%
   theme_minimal()</code></pre>
 <p><img src="assignment-1_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 </div>
-<div id="regression-models" class="section level1">
-<h1>Regression Models</h1>
+<div id="regression" class="section level1">
+<h1>Regression</h1>
 <pre class="r"><code>for (c in major_cities) {
   cat(&quot;\nCity:&quot;, c, &quot;\n&quot;)
   m &lt;- lm(median_sale_price ~ year, data = plot_data %&gt;% filter(city == c))
@@ -562,6 +563,47 @@ plot_data &lt;- txhousing %&gt;%
 ## Residual standard error: 8945 on 14 degrees of freedom
 ## Multiple R-squared:  0.8525, Adjusted R-squared:  0.8419 
 ## F-statistic: 80.89 on 1 and 14 DF,  p-value: 3.417e-07</code></pre>
+</div>
+<div id="map" class="section level1">
+<h1>Map</h1>
+<pre class="r"><code>city_coords &lt;- tibble::tribble(
+  ~city,           ~lat,     ~long,
+  &quot;Austin&quot;,         30.2672, -97.7431,
+  &quot;Dallas&quot;,         32.7767, -96.7970,
+  &quot;Houston&quot;,        29.7604, -95.3698,
+  &quot;Corpus Christi&quot;, 27.8006, -97.3964,
+  &quot;San Antonio&quot;,    29.4241, -98.4936,
+  &quot;Lubbock&quot;,        33.5779, -101.8552,
+  &quot;El Paso&quot;,        31.7619, -106.4850
+)
+
+reg_data &lt;- txhousing %&gt;%
+  filter(city %in% city_coords$city) %&gt;%
+  group_by(city, year) %&gt;%
+  summarize(median_sale_price = median(median, na.rm = TRUE), .groups = &quot;drop&quot;)
+
+slopes &lt;- reg_data %&gt;%
+  group_by(city) %&gt;%
+  do({
+    fit &lt;- lm(median_sale_price ~ year, data = .)
+    tibble(slope = coef(fit)[2])
+  }) %&gt;%
+  ungroup()
+
+plot_df &lt;- left_join(slopes, city_coords, by = &quot;city&quot;)
+
+tx_map &lt;- map_data(&quot;state&quot;) %&gt;% filter(region == &quot;texas&quot;)
+
+ggplot() +
+  geom_polygon(data = tx_map, aes(x = long, y = lat, group = group),
+               fill = &quot;gray95&quot;, color = &quot;gray70&quot;) +
+  geom_point(data = plot_df, aes(x = long, y = lat, color = slope), size = 8, alpha = .8) +
+  geom_text(data = plot_df, aes(x = long, y = lat, label = city), vjust = -1, size = 4) +
+  scale_color_gradient(low = &quot;lightblue&quot;, high = &quot;darkblue&quot;, name = &quot;Rate of Increase\n(USD/yr)&quot;) +
+  labs(title = &quot;Median Home Sale Price in Major Texas Cities, 2000-2015&quot;,
+       x = NULL, y = NULL) +
+  theme_void()</code></pre>
+<p><img src="assignment-1_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 </div>
 <div id="summary" class="section level1">
 <h1>Summary</h1>
