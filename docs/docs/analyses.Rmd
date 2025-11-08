@@ -1,0 +1,41 @@
+---
+title: "Analyses & Projects"
+output: html_document
+---
+
+```{r setup_analyses, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# How to use this page
+
+Each analysis was conducted through `.Rmd` that and knit to `.html`. 
+
+## Assignment 1
+
+**Title:** Housing Prices in Major Texas Cities  
+**File:** `assignment-1.Rmd` → `assignment-1.html`
+
+- **Open the analysis:** [assignment-1.html](assignment-1.html)
+- **What it shows:** a quick plot, regressions, and brief summary of results.
+- **Skills:** R Markdown, ggplot2, linear models.
+
+## Assignment 2
+
+**Title:** LiDAR modelling of Na Pali Coast  
+**File:** `assignment-2.Rmd` → `assignment-2.html`
+
+- **Open the analysis:** [assignment-2.html](assignment-2.html)
+- **What it shows:** 2D interactive map, 3D image, and brief methodology.
+- **Skills:** 2D and 3D modeling of LiDAR datasets.
+
+
+---
+
+## Add more analyses
+
+1. Copy `template-analysis.Rmd` to a new filename (e.g., `my-analysis.Rmd`).  
+2. Knit to generate `my-analysis.html`.  
+3. Add a bullet/link here:
+
+- _Example placeholder_: [my-analysis.html](my-analysis.html) — short description.

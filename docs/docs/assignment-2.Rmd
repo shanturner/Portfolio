@@ -1,0 +1,83 @@
+---
+title: "Na Pali Coast LiDAR Visualization"
+author: "Shannon Turner"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(terra)
+library(sf)
+library(tmap)
+library(rayshader)
+```
+
+## R Markdown
+
+# Overview
+This explores the uses and limitations of LIDAR data.
+
+# Visualizations
+```{r}
+# Load raster
+dsw <- rast("/Users/shannonturner/Documents/Geovisualization/AdvGEOVIS_Lab2Prj/Kauai_DSM/Kauai_DSM.tif")
+dsw
+
+# Define UTM crop extent
+
+crop_extent <- ext(418000, 430000, 2440000, 2455000)
+dsw_crop <- crop(dsw, crop_extent)
+
+# Terrain derivatives
+
+slope <- terrain(dsw_crop, v = "slope", unit = "radians")
+aspect <- terrain(dsw_crop, v = "aspect", unit = "radians")
+hill <- shade(slope, aspect, angle = 45, direction = 315)
+
+# Interactive map 
+
+tmap_mode("view")
+tm_shape(hill) +
+tm_raster(palette = gray.colors(100, start = 0.9, end = 0),
+legend.show = FALSE) +
+tm_shape(dsw_crop) +
+tm_raster(palette = terrain.colors(50),
+alpha = 0.6,
+title = "Elevation (m)") +
+tm_layout(title = "Elevation of Nå Pali Coast on Kauai")
+
+# Reduce resolution for faster processing
+dsw_small <- aggregate(dsw_crop, fact = 4, fun = mean)
+
+# Convert to matrix 
+dsw_mat <- as.matrix(dsw_small, wide = TRUE)
+dsw_mat <- dsw_mat[nrow(dsw_mat):1, ]
+
+#Generate 3D shaded map
+
+dsw_mat %>%
+sphere_shade(texture = "imhof1") %>%
+plot_3d(dsw_mat, zscale = 10, fov = 0, theta = 110, phi = 30,
+windowsize = c(1000, 800), shadow = TRUE)
+
+
+rgl::rgl.close()
+```
+
+```{r echo=FALSE, out.width='100%', fig.align='center'}
+#Screenshot of the 3D map.
+knitr::include_graphics('NaPali_3D.png')
+```
+
+# Research Methodology
+
+Kauai’s Na Pali Coast on the northwestern side of the island was examined using DSW data collected from the Hawai’i Statewide GIS Elevation Service. This LiDAR-derived .tif format dataset was loaded and processed. Initial data cleaning included verifying the coordinate reference system (NAD83(HARN) / UTM Zone 4N), cropping to the north Na Pali Coast extent, and aggregation to reduce computational load. Both a 2D hillshade map and a 3D visualization were produced using R packages such as terra, tmap, and rayshader. Terrain analyses, including slope, aspect, and elevation distribution, can be integrated with understandings of geomorphological features of the coastline. 
+
+The visualizations reveal the topography and geomorphology of the Na Pali Coast. In 2D, slope and elevation patterns highlight the steep cliffs and narrow valleys characteristic of the region. In 3D, the terrain complexity is clearly displayed as features such as ridgelines, valleys, and cliffs, creating a holistic understanding of the geomorphology. As the second-fastest eroding coastline in the world, these visualizations have practical applications in understanding the changes in the Na Pali coast over time. 
+
+The use of 3D visualization introduces both new opportunities and challenges. The immersion provided by this imagery enhances spatial understanding and supports more effective communication of topographic patterns. However, large LiDAR datasets, such as the one used here, require aggregation to manage memory limitations, which may reduce detail. Rendering parameters, including vertical exaggeration, viewing angles, and shading, must be carefully selected to balance visual clarity with accurate representation of terrain. Despite these challenges, the ability to interactively explore the landscape from multiple perspectives significantly enhances landscape understanding. 
+
+In the future, 3D geospatial technology will include highly interactive and immersive environments. These tools may aid in the landscape exploration of otherwise unavailable or remote areas, simulate urban planning possibilities, or model disaster risk scenarios. Particularly, animations or videos of 3D changes over time may be particularly beneficial in both professional and academic settings to understand real-time data compared to historic or future models for a complete interpretation of landscape data. Overall, 3D visualizations will likely become standard practice within the geosciences and environmental management as they further enhance understanding and communication.
