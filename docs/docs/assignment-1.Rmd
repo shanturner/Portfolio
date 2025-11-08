@@ -1,0 +1,96 @@
+---
+title: "Assignment 1: Coding Showcase"
+author: "Shannon Turner"
+output: html_document
+---
+
+```{r setup_assignment, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+# Overview
+This is a short analysis demonstrating basic skills: plotting and linear regression.
+
+# Data
+Using the built-in `txhousing` dataset from **ggplot2**.
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(maps)
+
+summary(txhousing)
+
+major_cities <- c("Austin", "Dallas", "Houston", "Corpus Christi", "San Antonio", "Lubbock", "El Paso")
+
+plot_data <- txhousing %>%
+  filter(city %in% major_cities) %>%
+  group_by(city, year) %>%
+  summarize(median_sale_price = median(median, na.rm = TRUE), .groups = "drop")
+
+```
+
+# Plot
+```{r}
+ggplot(plot_data, aes(x = year, y = median_sale_price, color = city)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Housing Prices in Major Texas Cities",
+       x = "Year",
+       y = "Median Sale Price (USD)",
+       color = "City") +
+  theme_minimal()
+```
+
+# Regression
+```{r}
+for (c in major_cities) {
+  cat("\nCity:", c, "\n")
+  m <- lm(median_sale_price ~ year, data = plot_data %>% filter(city == c))
+  print(summary(m))
+}
+```
+
+# Map
+
+```{r}
+city_coords <- tibble::tribble(
+  ~city,           ~lat,     ~long,
+  "Austin",         30.2672, -97.7431,
+  "Dallas",         32.7767, -96.7970,
+  "Houston",        29.7604, -95.3698,
+  "Corpus Christi", 27.8006, -97.3964,
+  "San Antonio",    29.4241, -98.4936,
+  "Lubbock",        33.5779, -101.8552,
+  "El Paso",        31.7619, -106.4850
+)
+
+reg_data <- txhousing %>%
+  filter(city %in% city_coords$city) %>%
+  group_by(city, year) %>%
+  summarize(median_sale_price = median(median, na.rm = TRUE), .groups = "drop")
+
+slopes <- reg_data %>%
+  group_by(city) %>%
+  do({
+    fit <- lm(median_sale_price ~ year, data = .)
+    tibble(slope = coef(fit)[2])
+  }) %>%
+  ungroup()
+
+plot_df <- left_join(slopes, city_coords, by = "city")
+
+tx_map <- map_data("state") %>% filter(region == "texas")
+
+ggplot() +
+  geom_polygon(data = tx_map, aes(x = long, y = lat, group = group),
+               fill = "gray95", color = "gray70") +
+  geom_point(data = plot_df, aes(x = long, y = lat, color = slope), size = 8, alpha = .8) +
+  geom_text(data = plot_df, aes(x = long, y = lat, label = city), vjust = -1, size = 4) +
+  scale_color_gradient(low = "lightblue", high = "darkblue", name = "Rate of Increase\n(USD/yr)") +
+  labs(title = "Median Home Sale Price in Major Texas Cities, 2000-2015",
+       x = NULL, y = NULL) +
+  theme_void()
+```
+
+# Summary
+Each of the seven selected Texas cities displayed a positive trend in median sale price of houses between the years 2000 and 2015. Austin housing prices increased most rapidly, at a rate of \$6,677 per year. Lubbock housing prices increased the slowest, at a rate of \$3,565 per year. Because this data is not current, implications of this data are limited. Further analysis could be conducted to compare these findings to trends of the most recent decade to further assess housing cost trends in Texas.
